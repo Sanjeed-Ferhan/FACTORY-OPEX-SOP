@@ -191,7 +191,13 @@ let jsonpCounter = 0;
 
 function gvizJsonpUrl(sheetName, callbackName){
   const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
-  const params = `?tqx=out:json;responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}&headers=0&t=${Date.now()}`;
+  // range=A1:Z500 is deliberate: without an explicit range, gviz tries to
+  // auto-detect "the" data table on the sheet using a heuristic that looks
+  // for one contiguous rectangular block. Tabs like IC have two separate
+  // blocks (an Owner/Responsible pair, then a gap, then the SOP table) and
+  // that heuristic can pick the wrong block or return an empty result.
+  // Requesting a fixed wide range sidesteps the heuristic entirely.
+  const params = `?tqx=out:json;responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}&range=A1:Z500&headers=0&t=${Date.now()}`;
   return base + params;
 }
 
