@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OPEX Redeployment 2026 — SOP Dashboard</title>
+<style>
+  :root{
+    --ink:#1b2420;
+    --paper:#f6f4ee;
+    --panel:#ffffff;
+    --line:#d9d3c4;
+    --rust:#b5502f;
+    --rust-dim:#e7c9bb;
+    --steel:#2f4858;
+    --steel-dim:#dfe7ea;
+    --good:#3c7a52;
+    --mono:'IBM Plex Mono','Courier New',monospace;
+    --serif:'Zilla Slab','Georgia',serif;
+    --sans:'IBM Plex Sans','Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
+  body{padding:28px 20px 60px;}
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  .masthead{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:14px;margin-bottom:6px;flex-wrap:wrap;gap:12px;
+  }
+  .masthead h1{
+    font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:.2px;margin:0;
+  }
+  .masthead .tag{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust);
+  }
+  .masthead .status{
+    text-align:right;font-family:var(--mono);font-size:11px;color:#5b6660;
+  }
+  .status .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:6px;box-shadow:0 0 0 3px rgba(60,122,82,.15);}
+  .status.err .dot{background:var(--rust);box-shadow:0 0 0 3px rgba(181,80,47,.15);}
+
+  .subline{font-size:12.5px;color:#5b6660;margin:8px 0 22px;font-family:var(--mono);}
+  .subline a{color:var(--steel);}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .refresh-controls{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;color:#5b6660;}
+  .refresh-controls select, .refresh-btn{
+    font-family:var(--mono);font-size:11.5px;border:1px solid var(--ink);background:var(--panel);
+    padding:6px 10px;cursor:pointer;color:var(--ink);border-radius:2px;
+  }
+  .refresh-btn{background:var(--ink);color:var(--paper);}
+  .refresh-btn:hover{background:var(--rust);border-color:var(--rust);}
+  .refresh-btn:active{transform:translateY(1px);}
+  .search-box{
+    font-family:var(--sans);font-size:13px;border:1px solid var(--line);background:var(--panel);
+    padding:7px 12px;border-radius:2px;width:220px;
+  }
+
+  nav.tabs{
+    display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0;
+    border-bottom:1px solid var(--line);padding-bottom:10px;
+  }
+  nav.tabs button{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;
+    background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    padding:7px 12px;border-radius:2px;cursor:pointer;white-space:nowrap;
+    transition:background .12s,border-color .12s,color .12s;
+  }
+  nav.tabs button:hover{border-color:var(--ink);}
+  nav.tabs button.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  nav.tabs button .n{color:var(--rust);font-weight:600;}
+  nav.tabs button.active .n{color:var(--rust-dim);}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-top:none;
+    padding:20px 20px 8px;min-height:200px;
+  }
+  .panel-head{
+    display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;
+    margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--ink);
+  }
+  .panel-head h2{font-family:var(--serif);font-size:19px;margin:0;font-weight:600;}
+  .panel-head .meta{font-family:var(--mono);font-size:10.5px;color:#8a8f89;text-align:right;}
+
+  .msg{font-family:var(--mono);font-size:12px;color:#8a8f89;padding:30px 4px;}
+  .msg.err{color:var(--rust);}
+
+  table.sop{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px;}
+  table.sop caption{
+    text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--steel);margin-bottom:6px;
+  }
+  table.sop th{
+    text-align:left;background:var(--steel);color:#fff;font-family:var(--sans);font-weight:600;
+    font-size:11.5px;letter-spacing:.02em;padding:8px 10px;border:1px solid var(--steel);
+    position:sticky;top:0;
+  }
+  table.sop td{
+    padding:8px 10px;border:1px solid var(--line);vertical-align:top;line-height:1.4;
+  }
+  table.sop tr.owner-row td{background:var(--rust-dim);font-weight:600;border-color:var(--rust-dim);}
+  table.sop tr.blank-row td{background:transparent;border-color:transparent;height:6px;padding:0;}
+  table.sop tbody tr:nth-child(even):not(.owner-row):not(.blank-row){background:#fbfaf6;}
+  table.sop tbody tr:hover:not(.owner-row):not(.blank-row){background:var(--steel-dim);}
+  table.sop td.hit{background:#fff2b8;}
+
+  .empty-cell{color:#c8c2b3;}
+
+  footer{margin-top:26px;font-family:var(--mono);font-size:10.5px;color:#9a9d97;text-align:center;}
+  footer a{color:var(--steel);}
+
+  @media (max-width:640px){
+    .masthead{flex-direction:column;align-items:flex-start;}
+    .masthead .status{text-align:left;}
+    .search-box{width:100%;}
+    .toolbar{flex-direction:column;align-items:stretch;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <div class="tag">AROPEX · OPEX Redeployment 2026</div>
+      <h1>SOP Dashboard</h1>
+    </div>
+    <div class="status" id="globalStatus"><span class="dot"></span>Connecting to sheet…</div>
+  </div>
+  <div class="subline">
+    Live view of every SOP tab except <strong>Sheet1</strong> and <strong>OPEX Team</strong> —
+    reads directly from <a href="https://docs.google.com/spreadsheets/d/1ne_6g5WQCHGMz7vZZaQrn_2WenyVYWPoq28BxZ5MwLA/edit" target="_blank" rel="noopener">the source spreadsheet</a>.
+    Edits made in Sheets appear here automatically.
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="searchBox" class="search-box" placeholder="Filter this tab…">
+    <div class="refresh-controls">
+      <span id="lastSync">Last sync: —</span>
+      <select id="intervalSelect">
+        <option value="30000">Auto-refresh: 30s</option>
+        <option value="60000" selected>Auto-refresh: 1 min</option>
+        <option value="300000">Auto-refresh: 5 min</option>
+        <option value="0">Auto-refresh: off</option>
+      </select>
+      <button class="refresh-btn" id="refreshNowBtn">↻ Refresh now</button>
+    </div>
+  </div>
+
+  <nav class="tabs" id="tabNav"></nav>
+  <div class="panel" id="panel">
+    <div class="msg">Loading sheet tabs…</div>
+  </div>
+
+  <footer>
+    Data source: Google Sheets (gviz live query) · Sheet ID 1ne_6g5WQCHGMz7vZZaQrn_2WenyVYWPoq28BxZ5MwLA ·
+    If a tab shows a load error, the sheet's sharing setting likely needs to be "Anyone with the link — Viewer".
+  </footer>
+
+</div>
+
+<script>
+const SHEET_ID = "1ne_6g5WQCHGMz7vZZaQrn_2WenyVYWPoq28BxZ5MwLA";
+
+// All tabs except Sheet1 and OPEX Team, in the sheet's own tab order
+const TABS = [
+  "IC",
+  "Problem card",
+  "5S Day",
+  "5S Audit",
+  "Training & Development",
+  "QCP Audit",
+  "4 Hours tracking Meeting",
+  "Monthly Operational Review Meeting",
+  "Random QC Test",
+  "Manpower Organogram",
+  "Capacity Declaration",
+  "Daily Operation Meeting",
+  "OEE Discipline",
+  "New Manpower Requirement Approval",
+  "Daily Improvement Meeting"
+];
+
+const cache = {};           // sheetName -> {cols, rows, fetchedAt}
+const errored = {};         // sheetName -> error message
+let activeTab = TABS[0];
+let timerId = null;
+
+function gvizUrl(sheetName){
+  const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+  const params = `?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&headers=0&t=${Date.now()}`;
+  return base + params;
+}
+
+function parseGviz(text){
+  // response wrapped as: google.visualization.Query.setResponse({...});
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error("Unexpected response format");
+  const json = JSON.parse(text.slice(start, end + 1));
+  if (json.status === "error") {
+    const msg = (json.errors && json.errors[0] && json.errors[0].detailed_message) || "Sheet query error";
+    throw new Error(msg);
+  }
+  return json.table;
+}
+
+function cellText(cell){
+  if (!cell) return "";
+  if (cell.f !== undefined && cell.f !== null) return String(cell.f);
+  if (cell.v === undefined || cell.v === null) return "";
+  return String(cell.v);
+}
+
+function trimTable(cols, rows){
+  // find last column index with any non-empty content (across header labels + all rows)
+  let lastCol = -1;
+  cols.forEach((c, i) => { if (c.label && c.label.trim() !== "") lastCol = Math.max(lastCol, i); });
+  rows.forEach(r => {
+    r.c.forEach((cell, i) => { if (cellText(cell).trim() !== "") lastCol = Math.max(lastCol, i); });
+  });
+  if (lastCol === -1) return { cols: [], rows: [] };
+
+  const trimmedCols = cols.slice(0, lastCol + 1);
+
+  // trim trailing fully-empty rows
+  let lastRow = -1;
+  rows.forEach((r, i) => {
+    const hasContent = r.c.slice(0, lastCol + 1).some(cell => cellText(cell).trim() !== "");
+    if (hasContent) lastRow = i;
+  });
+  const trimmedRows = rows.slice(0, lastRow + 1);
+
+  return { cols: trimmedCols, rows: trimmedRows };
+}
+
+async function fetchTab(sheetName){
+  const res = await fetch(gvizUrl(sheetName), { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  const table = parseGviz(text);
+  const { cols, rows } = trimTable(table.cols || [], table.rows || []);
+  return { cols, rows, fetchedAt: new Date() };
+}
+
+function rowIsOwnerLike(cells){
+  const first = cellText(cells[0]).trim().toLowerCase();
+  return first === "owner" || first === "responsible";
+}
+
+function rowIsBlank(cells){
+  return cells.every(c => cellText(c).trim() === "");
+}
+
+function renderTable(sheetName, data){
+  const { cols, rows } = data;
+  if (rows.length === 0) {
+    return `<div class="msg">This tab has no data yet.</div>`;
+  }
+
+  // Detect a header row: first non-blank, non-owner row where every cell looks like a short label
+  let headerRowIndex = -1;
+  for (let i = 0; i < rows.length; i++){
+    const cells = rows[i].c.map(c => cellText(c));
+    if (rowIsBlank(cells) || rowIsOwnerLike(cells)) continue;
+    headerRowIndex = i;
+    break;
+  }
+
+  let html = `<table class="sop"><thead><tr>`;
+  const colCount = cols.length;
+  const headerCells = headerRowIndex >= 0 ? rows[headerRowIndex].c : [];
+  for (let i = 0; i < colCount; i++){
+    const label = headerCells[i] ? cellText(headerCells[i]) : (cols[i].label || "");
+    html += `<th>${escapeHtml(label || "\u2014")}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  rows.forEach((r, idx) => {
+    if (idx === headerRowIndex) return;
+    const cells = r.c;
+    const texts = [];
+    for (let i = 0; i < colCount; i++) texts.push(cellText(cells[i]));
+
+    if (rowIsBlank(texts)) {
+      html += `<tr class="blank-row"><td colspan="${colCount}"></td></tr>`;
+      return;
+    }
+    const cls = rowIsOwnerLike(texts) ? "owner-row" : "";
+    html += `<tr class="${cls}" data-searchtext="${escapeHtml(texts.join(" ").toLowerCase())}">`;
+    texts.forEach(t => {
+      html += t.trim() === "" ? `<td class="empty-cell">—</td>` : `<td>${escapeHtml(t)}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  return html;
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function fmtTime(d){
+  return d.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function renderTabNav(){
+  const nav = document.getElementById("tabNav");
+  nav.innerHTML = "";
+  TABS.forEach((name, i) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (name === activeTab ? " active" : "");
+    btn.innerHTML = `<span class="n">${String(i+1).padStart(2,'0')}</span> ${escapeHtml(name)}`;
+    btn.addEventListener("click", () => {
+      activeTab = name;
+      document.getElementById("searchBox").value = "";
+      renderTabNav();
+      renderPanel();
+    });
+    nav.appendChild(btn);
+  });
+}
+
+function renderPanel(){
+  const panel = document.getElementById("panel");
+  const name = activeTab;
+
+  if (errored[name]) {
+    panel.innerHTML = `
+      <div class="panel-head"><h2>${escapeHtml(name)}</h2></div>
+      <div class="msg err">Could not load this tab: ${escapeHtml(errored[name])}<br><br>
+      Make sure the spreadsheet is shared as "Anyone with the link — Viewer" so this page can read it.</div>`;
+    return;
+  }
+
+  const data = cache[name];
+  if (!data) {
+    panel.innerHTML = `
+      <div class="panel-head"><h2>${escapeHtml(name)}</h2></div>
+      <div class="msg">Loading…</div>`;
+    return;
+  }
+
+  const rowCount = data.rows.filter(r => !rowIsBlank(r.c.map(c => cellText(c)))).length;
+  panel.innerHTML = `
+    <div class="panel-head">
+      <h2>${escapeHtml(name)}</h2>
+      <div class="meta">${rowCount} row${rowCount===1?"":"s"} · updated ${fmtTime(data.fetchedAt)}</div>
+    </div>
+    ${renderTable(name, data)}`;
+
+  applyFilter();
+}
+
+function applyFilter(){
+  const q = document.getElementById("searchBox").value.trim().toLowerCase();
+  const rows = document.querySelectorAll("table.sop tbody tr[data-searchtext]");
+  rows.forEach(r => {
+    const match = q === "" || r.getAttribute("data-searchtext").includes(q);
+    r.style.display = match ? "" : "none";
+  });
+}
+
+async function loadTab(name){
+  try {
+    const data = await fetchTab(name);
+    cache[name] = data;
+    delete errored[name];
+  } catch (e) {
+    errored[name] = e.message || String(e);
+  }
+}
+
+async function loadAll(showSpinner){
+  const statusEl = document.getElementById("globalStatus");
+  statusEl.innerHTML = `<span class="dot"></span>Syncing…`;
+  statusEl.classList.remove("err");
+
+  await Promise.all(TABS.map(name => loadTab(name)));
+
+  const failedCount = Object.keys(errored).length;
+  if (failedCount === TABS.length) {
+    statusEl.classList.add("err");
+    statusEl.innerHTML = `<span class="dot"></span>Sync failed — check sheet sharing settings`;
+  } else if (failedCount > 0) {
+    statusEl.classList.add("err");
+    statusEl.innerHTML = `<span class="dot"></span>${failedCount} tab(s) failed to load`;
+  } else {
+    statusEl.innerHTML = `<span class="dot"></span>Live`;
+  }
+
+  document.getElementById("lastSync").textContent = "Last sync: " + fmtTime(new Date());
+  renderPanel();
+}
+
+function scheduleAutoRefresh(){
+  if (timerId) clearInterval(timerId);
+  const ms = Number(document.getElementById("intervalSelect").value);
+  if (ms > 0) {
+    timerId = setInterval(() => loadAll(false), ms);
+  }
+}
+
+document.getElementById("refreshNowBtn").addEventListener("click", () => loadAll(true));
+document.getElementById("intervalSelect").addEventListener("change", scheduleAutoRefresh);
+document.getElementById("searchBox").addEventListener("input", applyFilter);
+
+renderTabNav();
+loadAll(true);
+scheduleAutoRefresh();
+</script>
+</body>
+</html>
